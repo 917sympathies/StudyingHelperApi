@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudyingHelperApi.Models;
 
@@ -10,9 +11,11 @@ using StudyingHelperApi.Models;
 namespace StudyingHelperApi.Migrations
 {
     [DbContext(typeof(StudyHelperContext))]
-    partial class StudyHelperContextModelSnapshot : ModelSnapshot
+    [Migration("20231021124103_fixed")]
+    partial class @fixed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
