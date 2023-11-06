@@ -17,7 +17,7 @@ namespace StudyingHelperApi.Controllers
 
         [HttpPost]
         [Route("signin")]
-        public JsonResult AuthorizeUser(User user )
+        public JsonResult AuthorizeUser(User user)
         {
             var data = database.users.ToList();
             var passHash = PasswordHandler.GetPasswordHash(user.Password);
@@ -40,11 +40,16 @@ namespace StudyingHelperApi.Controllers
         }
 
         [HttpGet]
-        [Route("getWorkspaces")]
-        public JsonResult GetUserWorkspacec(string username)
+        [Route("getWorkspaces/{id}")]
+        public JsonResult GetUserWorkspacec(int id)
         {
-            var u = database.users.FirstOrDefault(u=>u.Username == username);
+            var u = database.users.FirstOrDefault(u=>u.Id == id);
             if (u == null) return Json(new { Error = "NotFound" });
+            foreach(var item in u.Workspaces)
+                foreach(var task in item.Tasks)
+                {
+                    task.Deadline = task.Deadline;
+                }
             return Json(u.Workspaces);
         }
     }
