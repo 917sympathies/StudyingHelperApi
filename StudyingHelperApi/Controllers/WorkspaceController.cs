@@ -15,10 +15,10 @@ namespace StudyingHelperApi.Controllers
         }
 
         [HttpPost]
-        [Route("add")]
-        public JsonResult AddWorkspace(string username, Workspace workspace)
+        [Route("add/{id}")]
+        public JsonResult AddWorkspace(int id, Workspace workspace)
         {
-            var user = dataBase.users.FirstOrDefault(u => u.Username == username);
+            var user = dataBase.users.FirstOrDefault(u => u.Id == id);
             if (user == null) { return Json("Unknown error :("); }
             user.Workspaces.Add(workspace);
             dataBase.SaveChanges();
@@ -27,10 +27,10 @@ namespace StudyingHelperApi.Controllers
         }
 
         [HttpPost]
-        [Route("delete")]
-        public void DeleteWorkspace(Workspace workspace)
+        [Route("delete/{id}")]
+        public void DeleteWorkspace(int id)
         {
-            var w = dataBase.workspaces.FirstOrDefault(w => w.Id == workspace.Id);
+            var w = dataBase.workspaces.FirstOrDefault(w => w.Id == id);
             if (w == null) return;
             dataBase.workspaces.Remove(w);
             dataBase.SaveChanges();
