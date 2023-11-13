@@ -9,6 +9,7 @@ builder.Services.AddDbContext<StudyHelperContext>(options => options.UseLazyLoad
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors();
+builder.Services.AddAutoMapper(typeof(Program));
 
 var app = builder.Build();
 

@@ -1,61 +1,69 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using StudyingHelperApi.DataTransferObjects;
 using StudyingHelperApi.Models;
 using System.Text.Json;
 
 namespace StudyingHelperApi.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/user/{userId}/workspace")]
     [ApiController]
     public class WorkspaceController : Controller
     {
         private readonly StudyHelperContext dataBase;
-        public WorkspaceController(StudyHelperContext context)
+        private readonly IMapper mapper;
+        public WorkspaceController(StudyHelperContext dataBase, IMapper mapper)
         {
-            dataBase = context;
+            this.dataBase = dataBase;
+            this.mapper = mapper;
         }
 
         [HttpPost]
-        [Route("add/{id}")]
-        public JsonResult AddWorkspace(int id, Workspace workspace)
+        public IActionResult AddWorkspace(int userId, [FromBody] WorkspaceToCreationDto workspace)
         {
-            var user = dataBase.users.FirstOrDefault(u => u.Id == id);
-            if (user == null) { return Json("Unknown error :("); }
-            user.Workspaces.Add(workspace);
+            if (workspace == null) 
+                return BadRequest("Empty object was sent!");
+            var user = dataBase.users.FirstOrDefault(u => u.Id == userId);
+            if (user == null)
+                return NotFound();
+            var workspaces = user.Workspaces.ToList();
+            var workspaceEntity = mapper.Map<Workspace>(workspace);
+            workspaces.Add(workspaceEntity);
+            user.Workspaces = workspaces;
             dataBase.SaveChanges();
-            var lastWorkspace = user.Workspaces.LastOrDefault( w=> w.Name == workspace.Name);
-            return Json(workspace);
+            return Ok(workspaceEntity);
         }
 
-        [HttpPost]
-        [Route("delete/{id}")]
-        public void DeleteWorkspace(int id)
+        [HttpDelete("{id}")]
+        public IActionResult DeleteWorkspace(int userId, int id)
         {
             var w = dataBase.workspaces.FirstOrDefault(w => w.Id == id);
-            if (w == null) return;
+            if (w == null)
+                return NotFound();
             dataBase.workspaces.Remove(w);
             dataBase.SaveChanges();
+            return Ok();
         }
 
-        [HttpPost]
-        [Route("changename")]
-        public void ChangeNameWorkspace(Workspace workspace)
+        [HttpPost("{id}/name")]
+        public IActionResult ChangeNameWorkspace(int userId, int id, string name)
         {
-            var ws = dataBase.workspaces.FirstOrDefault(w=>w.Id == workspace.Id);
-            if (ws == null) { return; }
-            if(ws.Name == workspace.Name) { return; }
-            ws.Name = workspace.Name;
+            var ws = dataBase.workspaces.FirstOrDefault(w => w.Id == id);
+            if (ws == null)
+                return NotFound();
+            if (ws.Name == name)
+                return Ok();
+            ws.Name = name;
             dataBase.SaveChanges();
+            return Ok();
         }
 
-        [HttpPost]
-        [Route("addtask")]
-        public JsonResult AddTaskToWorkspace(Workspace workspace)
+        [HttpGet]
+        public IActionResult GetUserWorkspacec(int userId)
         {
-            var ws = dataBase.workspaces.FirstOrDefault(w => w.Id == workspace.Id);
-            if (ws == null) { return new JsonResult("WorkspaceNotFound"); }
-            ws.Tasks = workspace.Tasks;
-            dataBase.SaveChanges();
-            return Json(ws);
+            var u = dataBase.users.FirstOrDefault(u => u.Id == userId);
+            if (u == null) return NotFound();
+            return Ok(u.Workspaces);
         }
     }
 }

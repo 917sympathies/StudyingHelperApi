@@ -1,65 +1,53 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using StudyingHelperApi.DataTransferObjects;
 using StudyingHelperApi.Models;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace StudyingHelperApi.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/user")]
     [ApiController]
     public class UserController : Controller
     {
-        public static User User { get; private set; }
 
-        private StudyHelperContext database;
+        private readonly StudyHelperContext database;
+        private readonly IMapper mapper;
 
-        public UserController(StudyHelperContext database) { this.database = database; }
+        public UserController(StudyHelperContext database, IMapper mapper) 
+        { 
+            this.database = database;
+            this.mapper = mapper;
+        }
 
         [HttpPost]
         [Route("signin")]
-        public JsonResult AuthorizeUser(User user)
+        public IActionResult AuthorizeUser([FromBody]UserToSignInDto user)
         {
-            var data = database.users.ToList();
+            if (user == null) 
+                return BadRequest("Empty object was sent!");
             var passHash = PasswordHandler.GetPasswordHash(user.Password);
             var result = database.users.FirstOrDefault(u => u.Username == user.Username && u.Password == passHash);
-            if(result  == null) return Json(new { Error = "NotFound"});
-            User = result;
-            return Json(result);
+            if(result  == null) 
+                return NotFound();
+            var userToReturn = mapper.Map<UserDto>(result);
+            return Ok(userToReturn);
         }
 
 
         [HttpPost]
         [Route("signup")]
-        public JsonResult RegistrateUser(User user)
+        public IActionResult RegistrateUser([FromBody]UserToCreationDto user)
         {
-            user.Password = PasswordHandler.GetPasswordHash(user.Password);
-            database.users.Add(user);
+            if (user == null)
+                return BadRequest("Empty object was sent!");
+            var userEntity = mapper.Map<User>(user);
+            userEntity.Password = PasswordHandler.GetPasswordHash(user.Password);
+            database.users.Add(userEntity);
             database.SaveChanges();
-            User = database.users.FirstOrDefault(u => u.Username == user.Username);
-            return Json(User);
-        }
-
-        [HttpGet]
-        [Route("getWorkspaces/{id}")]
-        public JsonResult GetUserWorkspacec(int id)
-        {
-            var u = database.users.FirstOrDefault(u=>u.Id == id);
-            if (u == null) return Json(new { Error = "NotFound" });
-            foreach(var item in u.Workspaces)
-                foreach(var task in item.Tasks)
-                {
-                    task.Deadline = task.Deadline;
-                }
-            return Json(u.Workspaces);
-        }
-    }
-
-    public static class PasswordHandler
-    {
-        public static string GetPasswordHash(string password)
-        {
-            var md5 = MD5.Create();
-            return Convert.ToBase64String(md5.ComputeHash(Encoding.UTF8.GetBytes(password)));
+            var userToReturn = mapper.Map<UserDto>(userEntity);
+            return Ok(userToReturn);
         }
     }
 }
