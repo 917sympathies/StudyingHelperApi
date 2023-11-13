@@ -1,6 +1,6 @@
-﻿namespace StudyingHelperApi.Models
+﻿namespace StudyingHelperApi.DataTransferObjects
 {
-    public class Workspace
+    public class WorkspaceDto
     {
         public int Id { get; set; }
         public string Name { get; set; }

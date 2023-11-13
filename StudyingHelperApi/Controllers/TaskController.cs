@@ -1,59 +1,78 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using StudyingHelperApi.DataTransferObjects;
 using StudyingHelperApi.Models;
 using Task = StudyingHelperApi.Models.Task;
 
 namespace StudyingHelperApi.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/user/{userId}")]
     [ApiController]
     public class TaskController : Controller
     {
-        private StudyHelperContext database;
-        public TaskController(StudyHelperContext database) { this.database = database; }
+        private readonly StudyHelperContext dataBase;
+        private readonly IMapper mapper;
+        public TaskController(StudyHelperContext database, IMapper mapper) 
+        { 
+            this.dataBase = database;
+            this.mapper = mapper;
+        }
 
-        [HttpPost]
-        [Route("changeState")]
-        public IActionResult changeState(Task task)
+        [HttpPost("workspace/{workspaceId}/task/state")]
+        public IActionResult ChangeState(int userId, int workspaceId, Task task)
         {
-            var t = database.tasks.FirstOrDefault(t => t.Id == task.Id);
+            var t = dataBase.tasks.FirstOrDefault(t => t.Id == task.Id);
             if (t == null) return NotFound();
             t.State = task.State;
-            database.SaveChanges();
+            dataBase.SaveChanges();
             return Ok();
         }
 
-        [HttpPost]
-        [Route("delete/{id}")]
-        public IActionResult deleteTask(int id)
+        [HttpDelete("workspace/{workspaceId}/task/{id}")]
+        public IActionResult DeleteTask(int userId, int workspaceId, int id)
         {
-            var task = database.tasks.FirstOrDefault(t=>t.Id == id);
+            var task = dataBase.tasks.FirstOrDefault(t=>t.Id == id);
             if(task == null) return NotFound();
-            database.tasks.Remove(task);
-            database.SaveChanges();
+            dataBase.tasks.Remove(task);
+            dataBase.SaveChanges();
             return Ok();
         }
 
-        [HttpPost]
-        [Route("setDeadline/{id}")]
-        public JsonResult SetTaskDeadline(int id, object date)
+        [HttpPost("workspace/{workspaceId}/task/{id}/deadline")]
+        public IActionResult SetTaskDeadline(int userId, int workspaceId, int id, object date)
         {
             var dateTime = DateOnly.Parse(date.ToString());
-            var task = database.tasks.FirstOrDefault(t=>t.Id ==id);
-            if(task == null) return new JsonResult("Error");
+            var task = dataBase.tasks.FirstOrDefault(t=>t.Id ==id);
+            if(task == null) return BadRequest();
             task.Deadline = dateTime;
-            database.SaveChanges();
-            return Json(task);
+            dataBase.SaveChanges();
+            return Ok(task);
         }
 
-        [HttpGet]
-        [Route("getTasks/{id}")]
-        public JsonResult GetUserTasks(int id)
+        [HttpGet("task")]
+        public IActionResult GetUserTasks(int userId, int workspaceId)
         {
-            var user = database.users.FirstOrDefault(u=> u.Id == id);
-            if (user == null) return Json("Error");
+            var user = dataBase.users.FirstOrDefault(u=> u.Id == userId);
+            if (user == null) return BadRequest();
             var response = user.Workspaces.SelectMany(w => w.Tasks).ToList();
-            return Json(response);
-        } 
+            return Ok(response);
+        }
+
+        [HttpPost("workspace/{workspaceId}/task")]
+        public IActionResult AddTaskToWorkspace(int userId, int workspaceId, [FromBody]TaskToCreateDto task)
+        {
+            if(task == null) 
+                return BadRequest("Empty object sent!");
+            var ws = dataBase.workspaces.FirstOrDefault(w => w.Id == workspaceId);
+            if (ws == null)
+                return NotFound();
+            var tasks = ws.Tasks.ToList();
+            var taskEntity = mapper.Map<Task>(task);
+            tasks.Add(taskEntity);
+            ws.Tasks = tasks;
+            dataBase.SaveChanges();
+            return Ok(ws);
+        }
     }
 }
