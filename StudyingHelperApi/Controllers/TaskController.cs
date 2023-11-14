@@ -33,8 +33,15 @@ namespace StudyingHelperApi.Controllers
         public IActionResult DeleteTask(int userId, int workspaceId, int id)
         {
             var task = dataBase.tasks.FirstOrDefault(t=>t.Id == id);
-            if(task == null) return NotFound();
-            dataBase.tasks.Remove(task);
+            if(task == null) 
+                return NotFound();
+            var user = dataBase.users.FirstOrDefault(u => u.Id == userId);
+            if(user == null) 
+                return NotFound();
+            var workspace = user.Workspaces.FirstOrDefault(u => u.Id == workspaceId);
+            if(workspace == null)
+                return NotFound();
+            workspace.Tasks.Remove(task);
             dataBase.SaveChanges();
             return Ok();
         }
@@ -67,10 +74,8 @@ namespace StudyingHelperApi.Controllers
             var ws = dataBase.workspaces.FirstOrDefault(w => w.Id == workspaceId);
             if (ws == null)
                 return NotFound();
-            var tasks = ws.Tasks.ToList();
             var taskEntity = mapper.Map<Task>(task);
-            tasks.Add(taskEntity);
-            ws.Tasks = tasks;
+            ws.Tasks.Add(taskEntity);
             dataBase.SaveChanges();
             return Ok(ws);
         }
