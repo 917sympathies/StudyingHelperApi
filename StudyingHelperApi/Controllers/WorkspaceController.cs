@@ -26,10 +26,8 @@ namespace StudyingHelperApi.Controllers
             var user = dataBase.users.FirstOrDefault(u => u.Id == userId);
             if (user == null)
                 return NotFound();
-            var workspaces = user.Workspaces.ToList();
             var workspaceEntity = mapper.Map<Workspace>(workspace);
-            workspaces.Add(workspaceEntity);
-            user.Workspaces = workspaces;
+            user.Workspaces.Add(workspaceEntity);
             dataBase.SaveChanges();
             return Ok(workspaceEntity);
         }
@@ -37,10 +35,13 @@ namespace StudyingHelperApi.Controllers
         [HttpDelete("{id}")]
         public IActionResult DeleteWorkspace(int userId, int id)
         {
-            var w = dataBase.workspaces.FirstOrDefault(w => w.Id == id);
-            if (w == null)
+            var user = dataBase.users.FirstOrDefault(u => u.Id.Equals(userId));
+            if (user == null)
                 return NotFound();
-            dataBase.workspaces.Remove(w);
+            var workspace = dataBase.workspaces.FirstOrDefault(w => w.Id == id);
+            if (workspace == null)
+                return NotFound();
+            user.Workspaces.Remove(workspace);
             dataBase.SaveChanges();
             return Ok();
         }
@@ -59,7 +60,7 @@ namespace StudyingHelperApi.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetUserWorkspacec(int userId)
+        public IActionResult GetUserWorkspaces(int userId)
         {
             var u = dataBase.users.FirstOrDefault(u => u.Id == userId);
             if (u == null) return NotFound();
